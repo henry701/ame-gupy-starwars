@@ -7,7 +7,10 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import lombok.SneakyThrows;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
@@ -17,12 +20,6 @@ public class SwapiVerticleTest {
     public RunTestOnContext rule = new RunTestOnContext();
 
     private SwapiVerticle verticle;
-
-    @BeforeClass
-    @SneakyThrows
-    public static void init() {
-        Class.forName("org.hsqldb.jdbc.JDBCDriver");
-    }
 
     @Before
     @SneakyThrows

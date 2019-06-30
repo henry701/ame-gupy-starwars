@@ -2,6 +2,7 @@
   <dictionary name="henry">
     <words>
       <w>appenders</w>
+      <w>jdbc</w>
       <w>starwars</w>
       <w>swapi</w>
       <w>verticle</w>

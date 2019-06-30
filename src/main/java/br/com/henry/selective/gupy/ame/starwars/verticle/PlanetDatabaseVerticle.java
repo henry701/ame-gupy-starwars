@@ -11,12 +11,14 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.asyncsql.MySQLClient;
+import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.sql.SQLClient;
 import lombok.SneakyThrows;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.jooq.Query;
+import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 
 import javax.persistence.EntityManager;
@@ -36,7 +38,9 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     private SessionFactory sessionFactory;
     private Session session;
 
-    private SQLClient mySQLClient;
+    private SQLClient sqlClient;
+
+    private JooqQueryHelpers jooqQueryHelpers;
 
     @Override
     public void start(Future<Void> future) {
@@ -46,6 +50,7 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
                 try {
                     createEntityManager();
                     createSqlClient();
+                    createQueryHelper();
                     createConsumers();
                 }
                 catch(Exception e) {
@@ -65,18 +70,31 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
 
     }
 
+    private void createQueryHelper() {
+        SQLDialect dialect;
+        String vendor = config().getString("database.vendor", "mysql");
+        if ("mysql".equals(vendor)) {
+            dialect = SQLDialect.MYSQL_5_7;
+        } else if ("h2".equals(vendor)) {
+            dialect = SQLDialect.H2;
+        } else {
+            throw new IllegalStateException("Vendor " + vendor + " does not have an associated dialect!");
+        }
+        this.jooqQueryHelpers = new JooqQueryHelpers(dialect);
+    }
+
     private void createEntityManager() {
         Configuration cfg = new Configuration()
                 .setProperty("hibernate.connection.url", assembleConnectionString())
-                .setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver")
+                .setProperty("hibernate.connection.driver_class", config().getString("database.driver_class", "com.mysql.jdbc.Driver"))
                 .setProperty("hibernate.connection.username", config().getString("database.username", "root"))
                 .setProperty("hibernate.connection.password", config().getString("database.password", "root"))
                 .setProperty("hibernate.order_updates", "true");
 
         @SuppressWarnings("unchecked")
         Map<Object, Object> merged = new HashMap(config().getMap());
-
         merged.putAll(cfg.getProperties());
+
         this.entityManagerFactory = Persistence.createEntityManagerFactory(
                 config().getString("database.persistence.unit", "PlanetPersistenceUnit"),
                 merged
@@ -87,15 +105,21 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     }
 
     private String assembleConnectionString() {
-        String cstring = "jdbc:";
-        cstring += config().getString("database.type", "mysql") + "://";
-        cstring += config().getString("database.host", "127.0.0.1");
-        Integer port = config().getInteger("database.port", 3306);
-        if(port != null) {
-            cstring += ":" + port;
+        String cstring;
+        String rawUrl = config().getString("database.raw_connection_url");
+        if (rawUrl != null && !rawUrl.isEmpty()) {
+            cstring = rawUrl;
+        } else {
+            cstring = "jdbc:";
+            cstring += config().getString("database.vendor", "mysql") + "://";
+            cstring += config().getString("database.host", "127.0.0.1");
+            Integer port = config().getInteger("database.port", 3306);
+            if (port != null) {
+                cstring += ":" + port;
+            }
+            cstring += "/" + config().getString("database.schema", "ameswapi");
+            cstring += "?createDatabaseIfNotExist=true&autoCommit=true";
         }
-        cstring += "/" + config().getString("database.schema", "ameswapi");
-        cstring += "?createDatabaseIfNotExist=true&autoCommit=true";
         return cstring;
     }
 
@@ -120,7 +144,7 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
                 if(blockAr.failed()) {
                     future.fail(blockAr.cause());
                 }
-                mySQLClient.close(closeAr -> {
+                sqlClient.close(closeAr -> {
                     if(closeAr.failed()) {
                         future.fail(closeAr.cause());
                         return;
@@ -133,8 +157,13 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     }
 
     private void createSqlClient() {
-        JsonObject mySQLClientConfig = buildDatabaseConfig();
-        this.mySQLClient = MySQLClient.createNonShared(vertx, mySQLClientConfig);
+        JsonObject clientConfig = buildDatabaseConfig();
+        if ("mysql".equals(config().getString("database.vendor", "mysql"))) {
+            this.sqlClient = MySQLClient.createShared(vertx, clientConfig);
+        } else {
+            // Generic JDBCClient
+            this.sqlClient = JDBCClient.createShared(vertx, clientConfig);
+        }
     }
 
     private JsonObject buildDatabaseConfig() {
@@ -143,8 +172,9 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
                         .put("port", config().getInteger("database.port", 3306))
                         .put("username", config().getString("database.username", "root"))
                         .put("password", config().getString("database.password", "root"))
-                        .put("database", config().getString("database.schema", "ameswapi"))
-                        .put("charset", config().getString("database.charset", "UTF-8"));
+                .put("database", config().getString("database.schema", "amesw"))
+                .put("charset", config().getString("database.charset", "UTF-8"))
+                .put("url", assembleConnectionString());
     }
 
     private void createConsumers() {
@@ -156,10 +186,10 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     @SneakyThrows
     private void onInsert(Message<Object> message) {
         SwapiPlanet planet = new JsonObject(message.body().toString()).mapTo(SwapiPlanet.class);
-        Query query = JooqQueryHelpers.buildInsertQuery(entityManager, planet, SwapiPlanet.class);
+        Query query = jooqQueryHelpers.buildInsertQuery(entityManager, planet, SwapiPlanet.class);
         String rawQuery = query.getSQL(ParamType.INLINED);
         LOGGER.trace("Generated query for Planet insertion: {}", rawQuery);
-        mySQLClient.update(rawQuery, resultAr -> {
+        sqlClient.update(rawQuery, resultAr -> {
             if(resultAr.failed()) {
                 message.fail(0, resultAr.cause().getMessage());
                 return;
@@ -173,10 +203,10 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     @SneakyThrows
     private void onSearch(Message<Object> message) {
         SwapiPlanet planet = new JsonObject(message.body().toString()).mapTo(SwapiPlanet.class);
-        Query query = JooqQueryHelpers.buildSelectByExample(entityManager, planet, SwapiPlanet.class);
+        Query query = jooqQueryHelpers.buildSelectByExample(entityManager, planet, SwapiPlanet.class);
         String rawQuery = query.getSQL(ParamType.INLINED);
         LOGGER.trace("Generated query for Planet search: {}", rawQuery);
-        mySQLClient.query(rawQuery, resultAr -> {
+        sqlClient.query(rawQuery, resultAr -> {
             if(resultAr.failed()) {
                 message.fail(0, resultAr.cause().getMessage());
                 return;
@@ -189,10 +219,10 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     @SneakyThrows
     private void onDelete(Message<Object> message) {
         SwapiPlanet planet = new JsonObject(message.body().toString()).mapTo(SwapiPlanet.class);
-        Query query = JooqQueryHelpers.buildDeleteByExample(entityManager, planet, SwapiPlanet.class);
+        Query query = jooqQueryHelpers.buildDeleteByExample(entityManager, planet, SwapiPlanet.class);
         String rawQuery = query.getSQL(ParamType.INLINED);
         LOGGER.trace("Generated query for Planet deletion: {}", rawQuery);
-        mySQLClient.update(rawQuery, resultAr -> {
+        sqlClient.update(rawQuery, resultAr -> {
             if(resultAr.failed()) {
                 message.fail(0, resultAr.cause().getMessage());
                 return;
