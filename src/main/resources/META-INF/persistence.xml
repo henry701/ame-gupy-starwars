@@ -5,5 +5,7 @@
              version="2.1">
     <persistence-unit name="PlanetPersistenceUnit">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <class>br.com.henry.selective.gupy.ame.starwars.SwapiPlanet</class>
+        <class>br.com.henry.selective.gupy.ame.starwars.Planet</class>
     </persistence-unit>
 </persistence>

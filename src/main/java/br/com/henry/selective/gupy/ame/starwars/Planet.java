@@ -2,21 +2,18 @@ package br.com.henry.selective.gupy.ame.starwars;
 
 import lombok.Data;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 
-@Entity
+@MappedSuperclass
 @Data
 public class Planet {
 
-    @Column(name = "id")
+    @Column(name = "id", insertable = false)
     @Id
-    @GeneratedValue
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "name")
+    @Column(name = "name", unique = true, nullable = false)
     private String name;
 
     @Column(name = "climate")

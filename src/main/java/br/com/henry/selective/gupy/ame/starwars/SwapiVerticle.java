@@ -24,8 +24,26 @@ public class SwapiVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> future) {
-        createWebClient();
-        createConsumer();
+        try {
+            createWebClient();
+            createConsumer();
+        }
+        catch(Exception e) {
+            future.fail(e);
+            return;
+        }
+        future.complete();
+    }
+
+    @Override
+    public void stop(Future<Void> future) {
+        try {
+            webClient.close();
+        }
+        catch(Exception e) {
+            future.fail(e);
+            return;
+        }
         future.complete();
     }
 

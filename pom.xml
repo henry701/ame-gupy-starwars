@@ -18,6 +18,7 @@
         <lombok.version>1.18.8</lombok.version>
         <jooq.version>3.11.11</jooq.version>
         <hibernate.version>5.4.3.Final</hibernate.version>
+        <mysql-connector.version>5.1.47</mysql-connector.version>
     </properties>
 
     <dependencies>
@@ -43,6 +44,16 @@
             <artifactId>vertx-web-client</artifactId>
             <version>${vertx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-sql-common</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mysql-postgresql-client</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
 
         <!-- Database dependencies -->
         <dependency>
@@ -54,6 +65,11 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <version>${hibernate.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql-connector.version}</version>
         </dependency>
 
         <!-- Logging dependencies -->

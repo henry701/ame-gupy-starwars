@@ -65,8 +65,7 @@ public abstract class JooqQueryHelpers {
     }
 
     private static DSLContext getDSL() {
-        return DSL
-                .using(SQLDialect.MYSQL_5_7);
+        return DSL.using(SQLDialect.MYSQL_5_7);
     }
 
     /**

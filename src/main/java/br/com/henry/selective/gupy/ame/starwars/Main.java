@@ -61,6 +61,7 @@ public class Main {
     }
 
     private static void startVerticles(Vertx vertx, DeploymentOptions deploymentOptions) {
+        // TODO: CompletionHandler the three, and if any fails, throw exception to drop the application
         vertx.deployVerticle(new SwapiVerticle(), deploymentOptions);
         vertx.deployVerticle(new ServerVerticle(), deploymentOptions);
         vertx.deployVerticle(new PlanetDatabaseVerticle(), deploymentOptions);

@@ -34,6 +34,14 @@
     <orderEntry type="library" name="Maven: io.vertx:vertx-bridge-common:3.7.1" level="project" />
     <orderEntry type="library" name="Maven: io.vertx:vertx-config:3.7.1" level="project" />
     <orderEntry type="library" name="Maven: io.vertx:vertx-web-client:3.7.1" level="project" />
+    <orderEntry type="library" name="Maven: io.vertx:vertx-sql-common:3.7.1" level="project" />
+    <orderEntry type="library" name="Maven: io.vertx:vertx-mysql-postgresql-client:3.7.1" level="project" />
+    <orderEntry type="library" name="Maven: org.scala-lang:scala-library:2.12.7" level="project" />
+    <orderEntry type="library" name="Maven: com.github.mauricio:postgresql-async_2.12:0.2.21" level="project" />
+    <orderEntry type="library" name="Maven: com.github.mauricio:db-async-common_2.12:0.2.21" level="project" />
+    <orderEntry type="library" name="Maven: joda-time:joda-time:2.9.7" level="project" />
+    <orderEntry type="library" name="Maven: org.joda:joda-convert:1.8.1" level="project" />
+    <orderEntry type="library" name="Maven: com.github.mauricio:mysql-async_2.12:0.2.21" level="project" />
     <orderEntry type="library" name="Maven: org.jooq:jooq:3.11.11" level="project" />
     <orderEntry type="library" name="Maven: javax.xml.bind:jaxb-api:2.2.12" level="project" />
     <orderEntry type="library" name="Maven: org.hibernate:hibernate-core:5.4.3.Final" level="project" />
@@ -53,6 +61,7 @@
     <orderEntry type="library" name="Maven: com.sun.istack:istack-commons-runtime:3.0.7" level="project" />
     <orderEntry type="library" name="Maven: org.jvnet.staxex:stax-ex:1.8" level="project" />
     <orderEntry type="library" name="Maven: com.sun.xml.fastinfoset:FastInfoset:1.2.15" level="project" />
+    <orderEntry type="library" name="Maven: mysql:mysql-connector-java:5.1.47" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-slf4j-impl:2.12.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.12.0" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.apache.logging.log4j:log4j-core:2.12.0" level="project" />
