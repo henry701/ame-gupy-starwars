@@ -1,4 +1,4 @@
-package br.com.henry.selective.gupy.ame.starwars;
+package br.com.henry.selective.gupy.ame.starwars.util;
 
 import io.vertx.core.json.Json;
 import org.jooq.Condition;

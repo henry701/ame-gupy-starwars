@@ -1,5 +1,8 @@
-package br.com.henry.selective.gupy.ame.starwars;
+package br.com.henry.selective.gupy.ame.starwars.verticle;
 
+import br.com.henry.selective.gupy.ame.starwars.constant.EventBusAddresses;
+import br.com.henry.selective.gupy.ame.starwars.model.SwapiPlanet;
+import br.com.henry.selective.gupy.ame.starwars.util.JooqQueryHelpers;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.Message;

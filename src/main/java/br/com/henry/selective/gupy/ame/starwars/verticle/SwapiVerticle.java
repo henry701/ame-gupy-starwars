@@ -1,5 +1,6 @@
-package br.com.henry.selective.gupy.ame.starwars;
+package br.com.henry.selective.gupy.ame.starwars.verticle;
 
+import br.com.henry.selective.gupy.ame.starwars.constant.EventBusAddresses;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;

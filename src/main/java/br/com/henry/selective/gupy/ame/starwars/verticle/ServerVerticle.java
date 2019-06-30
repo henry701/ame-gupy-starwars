@@ -1,8 +1,11 @@
-package br.com.henry.selective.gupy.ame.starwars;
+package br.com.henry.selective.gupy.ame.starwars.verticle;
 
+import br.com.henry.selective.gupy.ame.starwars.constant.EventBusAddresses;
+import br.com.henry.selective.gupy.ame.starwars.model.Planet;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
@@ -22,19 +25,17 @@ public class ServerVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> future) {
-        Router router = createRoutes();
-        createServer(future, router);
+        try {
+            Router router = createRoutes();
+            createServer(future, router);
+        } catch (Exception e) {
+            future.fail(e);
+        }
     }
 
     @Override
     public void stop(Future<Void> future) {
-        httpServer.close(closeAr -> {
-            if(closeAr.failed()) {
-                future.fail(closeAr.cause());
-                return;
-            }
-            future.complete();
-        });
+        httpServer.close(future);
     }
 
     private void createServer(Future<Void> future, Router router) {
@@ -99,15 +100,16 @@ public class ServerVerticle extends AbstractVerticle {
     }
 
     private void planetQueryHandler(RoutingContext routingRequest) {
-        JsonObject queryMap = new JsonObject().put("id", routingRequest.queryParams().get("id"))
+        JsonObject queryMap = new JsonObject()
+                .put("id", routingRequest.queryParams().get("id"))
                 .put("name", routingRequest.queryParams().get("name"));
         if(queryMap.isEmpty()) {
-            routingRequest.response().setStatusCode(400).end(getMessageError("Either 'id' or 'name' query parameters should be present on the request!").encodePrettily());
+            finishWithError(routingRequest, 400, "Either 'id' or 'name' query parameters should be present on the request!");
             return;
         }
         vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_SEARCH, queryMap.encode(), planetsAr -> {
             if(planetsAr.failed()) {
-                routingRequest.response().setStatusCode(500).end();
+                finishWithError(routingRequest, 500, planetsAr.cause().getMessage());
                 return;
             }
             JsonArray list = planetsAr.result().body() == null ? new JsonArray() : new JsonArray(planetsAr.result().body().toString());
@@ -126,7 +128,7 @@ public class ServerVerticle extends AbstractVerticle {
         vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_DELETE, queryMap.encode(), deletionAr -> {
             if(deletionAr.failed()) {
                 LOGGER.error("Deletion of planet with ID {} failed due to database error!", planetId, deletionAr.cause());
-                routingRequest.response().setStatusCode(500).end(getMessageError(deletionAr.cause().getMessage()).encodePrettily());
+                finishWithError(routingRequest, 500, deletionAr.cause().getMessage());
                 return;
             }
             routingRequest.response().setStatusCode(204).end();
@@ -139,41 +141,39 @@ public class ServerVerticle extends AbstractVerticle {
         Planet planet = body.mapTo(Planet.class);
         LOGGER.info("Received creation request for planet {}", planet);
 
-        // TODO: Remove this callback hell
-        vertx.eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, JsonObject.mapFrom(planet).encode(), newPlanetAr -> {
-
-            Object newPlanet = extractNewPlanet(planet, newPlanetAr);
-
-            vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_INSERT, JsonObject.mapFrom(newPlanet).encode(), dbResponseAr -> {
-                if(dbResponseAr.failed()) {
-                    LOGGER.error("Insertion of planet {} failed due to database error!", newPlanet, dbResponseAr.cause());
-                    routingRequest.response().setStatusCode(500).end(getMessageError(dbResponseAr.cause().getMessage()).encodePrettily());
-                    return;
-                }
-                routingRequest.response().setStatusCode(201).end(new JsonObject(dbResponseAr.result().body().toString()).encodePrettily());
-            });
-        });
+        aggregateWithSwapi(
+                planet,
+                newPlanetAr -> insertInDatabase(routingRequest, planet, newPlanetAr)
+        );
 
     }
 
-    private Object extractNewPlanet(Planet planet, AsyncResult<Message<Object>> newPlanetAr) {
-        Object newPlanet;
-        if(newPlanetAr.failed()) {
-            LOGGER.warn("Planet with name {} is being inserted without film quantity due to error", planet.getName(), newPlanetAr.cause());
-            newPlanet = planet;
-        } else {
-            if(newPlanetAr.result() == null) {
-                LOGGER.warn("Planet with name {} is being inserted without film quantity due to null response", planet.getName());
-                newPlanet = planet;
-            } else {
-                newPlanet = new JsonObject(newPlanetAr.result().body().toString());
-                LOGGER.debug("Planet has been aggregated successfully: {}", newPlanet);
-            }
+    private <T> void aggregateWithSwapi(Planet planet, Handler<AsyncResult<Message<T>>> replyHandler) {
+        vertx.eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, JsonObject.mapFrom(planet).encode(), replyHandler);
+    }
+
+    private void insertInDatabase(RoutingContext routingRequest, Planet planet, AsyncResult<Message<Object>> newPlanetAr) {
+        if (newPlanetAr.failed()) {
+            LOGGER.warn("Planet with name {} aggregation has failed!", planet.getName(), newPlanetAr.cause());
+            finishWithError(routingRequest, 500, newPlanetAr.cause().getMessage());
+            return;
         }
-        return newPlanet;
+        JsonObject newPlanet = new JsonObject(newPlanetAr.result().body().toString());
+        LOGGER.debug("Planet has been aggregated successfully: {}", newPlanet);
+        vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_INSERT, JsonObject.mapFrom(newPlanet).encode(), dbResponseAr -> afterInsert(routingRequest, newPlanet, dbResponseAr));
     }
 
-    public HttpServer getHttpServer() {
-        return httpServer;
+    private void finishWithError(RoutingContext routingRequest, int statusCode, String message) {
+        routingRequest.response().setStatusCode(statusCode).end(getMessageError(message).encodePrettily());
     }
+
+    private void afterInsert(RoutingContext routingRequest, Object newPlanet, AsyncResult<Message<Object>> dbResponseAr) {
+        if (dbResponseAr.failed()) {
+            LOGGER.error("Insertion of planet {} failed due to database error!", newPlanet, dbResponseAr.cause());
+            finishWithError(routingRequest, 500, dbResponseAr.cause().getMessage());
+            return;
+        }
+        routingRequest.response().setStatusCode(201).end(new JsonObject(dbResponseAr.result().body().toString()).encodePrettily());
+    }
+
 }

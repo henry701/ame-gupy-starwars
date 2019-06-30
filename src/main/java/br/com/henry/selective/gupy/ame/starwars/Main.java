@@ -1,12 +1,12 @@
 package br.com.henry.selective.gupy.ame.starwars;
 
+import br.com.henry.selective.gupy.ame.starwars.verticle.PlanetDatabaseVerticle;
+import br.com.henry.selective.gupy.ame.starwars.verticle.ServerVerticle;
+import br.com.henry.selective.gupy.ame.starwars.verticle.SwapiVerticle;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.json.JsonObject;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class Main {
         try {
             loadEnv();
             Vertx vertx = Vertx.vertx();
-            getConfig(vertx, configHandler(vertx));
+            getConfig(vertx).setHandler(startWithConfig(vertx));
         }
         catch(Exception e) {
             LOGGER.error("Fatal error while starting server!", e);
@@ -51,7 +51,7 @@ public class Main {
         }
     }
 
-    private static Handler<AsyncResult<JsonObject>> configHandler(Vertx vertx) {
+    private static Handler<AsyncResult<JsonObject>> startWithConfig(Vertx vertx) {
         return configAr -> startWithConfig(vertx, configAr);
     }
 
@@ -82,12 +82,14 @@ public class Main {
         }
     }
 
-    private static void getConfig(Vertx vertx, Handler<AsyncResult<JsonObject>> then) {
+    private static Future<JsonObject> getConfig(Vertx vertx) {
         LOGGER.info("Retrieving configuration...");
         ConfigStoreOptions sysPropsStore = new ConfigStoreOptions().setType("sys");
         ConfigRetrieverOptions options = new ConfigRetrieverOptions().addStore(sysPropsStore);
         ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
-        retriever.getConfig(then);
+        Future<JsonObject> future = Future.future();
+        retriever.getConfig(future);
+        return future;
     }
 
 }
