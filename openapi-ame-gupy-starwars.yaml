@@ -1,0 +1,137 @@
+openapi: 3.0.0
+info:
+  title: ame-gupy-starwars-api
+  contact:
+    email: "henry_tuori@hotmail.com"
+    name: "Henrique Borsatto de Campos"
+    url: "https://github.com/henry701"
+  version: '1.0'
+servers:
+  - url: http://{host}:{port}
+    variables:
+      host:
+        default: "127.0.0.1"
+      port:
+        default: "8085"
+paths:
+  /planet:
+    post:
+      summary: Create Planet
+      description: 'Creates a planet'
+      operationId: CreatePlanet
+      parameters:
+        - name: Content-Type
+          in: header
+          description: ''
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: application/json
+      requestBody:
+        description: 'The planet object to be created'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanetObject'
+            example:
+              name: Yavin IV
+              climate: temperate, tropical
+              terrain: jungle, rainforests
+        required: true
+      responses:
+        200:
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanetObject'
+      deprecated: false
+    get:
+      summary: Retrieve Plane
+      description: 'Retrieves a planet by Name and/or Id'
+      operationId: RetrievePlanet
+      parameters:
+        - name: name
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: "Yavin IV"
+        - name: id
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: ''
+          headers: {}
+      deprecated: false
+  /planet/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 1
+    delete:
+      summary: Delete Planet
+      description: 'Deletes a planet from the database'
+      operationId: DeletePlanet
+      responses:
+        200:
+          description: ''
+          headers: {}
+      deprecated: false
+  /planet/list:
+    get:
+      summary: List Planets
+      description: 'Lists all the planets in the database'
+      operationId: ListPlanets
+      responses:
+        200:
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlanetObject'
+      deprecated: false
+components:
+  schemas:
+    PlanetObject:
+      title: PlanetObject
+      required:
+        - name
+        - climate
+        - terrain
+      type: object
+      properties:
+        name:
+          type: string
+        climate:
+          type: string
+        terrain:
+          type: string
+        id:
+          type: integer
+        films:
+          type: integer
+      example:
+        name: Yavin IV
+        climate: temperate, tropical
+        terrain: jungle, rainforests
+tags: ["ame", "star-wars", "starwars", "api", "planet"]

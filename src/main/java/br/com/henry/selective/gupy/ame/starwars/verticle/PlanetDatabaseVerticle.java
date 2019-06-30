@@ -72,7 +72,10 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
                 .setProperty("hibernate.connection.username", config().getString("database.username", "root"))
                 .setProperty("hibernate.connection.password", config().getString("database.password", "root"))
                 .setProperty("hibernate.order_updates", "true");
+
+        @SuppressWarnings("unchecked")
         Map<Object, Object> merged = new HashMap(config().getMap());
+
         merged.putAll(cfg.getProperties());
         this.entityManagerFactory = Persistence.createEntityManagerFactory(
                 config().getString("database.persistence.unit", "PlanetPersistenceUnit"),
@@ -84,7 +87,8 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
     }
 
     private String assembleConnectionString() {
-        String cstring = "jdbc:mysql://";
+        String cstring = "jdbc:";
+        cstring += config().getString("database.type", "mysql") + "://";
         cstring += config().getString("database.host", "127.0.0.1");
         Integer port = config().getInteger("database.port", 3306);
         if(port != null) {

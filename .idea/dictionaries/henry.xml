@@ -2,10 +2,12 @@
   <dictionary name="henry">
     <words>
       <w>appenders</w>
+      <w>starwars</w>
       <w>swapi</w>
       <w>verticle</w>
       <w>verticles</w>
       <w>vertx</w>
+      <w>yavin</w>
     </words>
   </dictionary>
 </component>

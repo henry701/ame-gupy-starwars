@@ -19,6 +19,7 @@
         <jooq.version>3.11.11</jooq.version>
         <hibernate.version>5.4.3.Final</hibernate.version>
         <mysql-connector.version>5.1.47</mysql-connector.version>
+        <hsqldb.version>2.3.4</hsqldb.version>
     </properties>
 
     <dependencies>
@@ -96,6 +97,18 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>${hsqldb.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-unit</artifactId>
+            <version>${vertx.version}</version>
             <scope>test</scope>
         </dependency>
 
