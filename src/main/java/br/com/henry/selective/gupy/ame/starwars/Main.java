@@ -59,7 +59,9 @@ public class Main {
         throwIfConfigHasError(configAr);
         DeploymentOptions deploymentOptions = new DeploymentOptions();
         deploymentOptions.setConfig(configAr.result());
+        vertx.deployVerticle(new SwapiVerticle(), deploymentOptions);
         vertx.deployVerticle(new ServerVerticle(), deploymentOptions);
+        // TODO: Add databaseVerticle here
         LOGGER.info("Verticle deployed");
     }
 

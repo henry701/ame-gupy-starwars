@@ -8,7 +8,7 @@
     <artifactId>ame-gupy-starwars</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <description>Star Wars planet API microservice</description>
+    <description>Star Wars planet API micro-service</description>
 
     <properties>
         <junit.version>4.12</junit.version>
@@ -16,6 +16,7 @@
         <log4j.version>2.12.0</log4j.version>
         <slf4j.version>1.7.26</slf4j.version>
         <lombok.version>1.18.8</lombok.version>
+        <jooq.version>3.11.11</jooq.version>
     </properties>
 
     <dependencies>
@@ -36,25 +37,39 @@
             <artifactId>vertx-config</artifactId>
             <version>${vertx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
 
+        <!-- Database dependencies -->
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>${jooq.version}</version>
+        </dependency>
+
+        <!-- Logging dependencies -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
 
+        <!-- Others -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
         </dependency>
 
+        <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

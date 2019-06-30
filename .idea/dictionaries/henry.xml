@@ -2,6 +2,7 @@
   <dictionary name="henry">
     <words>
       <w>appenders</w>
+      <w>swapi</w>
       <w>verticle</w>
       <w>vertx</w>
     </words>
