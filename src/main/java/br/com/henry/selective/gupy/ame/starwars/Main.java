@@ -56,13 +56,22 @@ public class Main {
     }
 
     private static void startWithConfig(Vertx vertx, AsyncResult<JsonObject> configAr) {
+        DeploymentOptions deploymentOptions = buildConfig(configAr);
+        startVerticles(vertx, deploymentOptions);
+    }
+
+    private static void startVerticles(Vertx vertx, DeploymentOptions deploymentOptions) {
+        vertx.deployVerticle(new SwapiVerticle(), deploymentOptions);
+        vertx.deployVerticle(new ServerVerticle(), deploymentOptions);
+        vertx.deployVerticle(new PlanetDatabaseVerticle(), deploymentOptions);
+        LOGGER.info("All verticles have been deployed!");
+    }
+
+    private static DeploymentOptions buildConfig(AsyncResult<JsonObject> configAr) {
         throwIfConfigHasError(configAr);
         DeploymentOptions deploymentOptions = new DeploymentOptions();
         deploymentOptions.setConfig(configAr.result());
-        vertx.deployVerticle(new SwapiVerticle(), deploymentOptions);
-        vertx.deployVerticle(new ServerVerticle(), deploymentOptions);
-        // TODO: Add databaseVerticle here
-        LOGGER.info("Verticle deployed");
+        return deploymentOptions;
     }
 
     @SneakyThrows

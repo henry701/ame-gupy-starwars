@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
 public class ServerVerticle extends AbstractVerticle {
@@ -49,33 +50,52 @@ public class ServerVerticle extends AbstractVerticle {
         router.route("/planet")
                 .method(HttpMethod.POST)
                 .handler(BodyHandler.create())
+                .handler(this::productCreationHandler);
+
+        router.route("/planet")
+                .method(HttpMethod.GET)
                 .handler(routingRequest -> {
-
-            JsonObject body = routingRequest.getBodyAsJson();
-            Planet planet = body.mapTo(Planet.class);
-            LOGGER.info("Received creation request for planet {}", planet);
-
-            vertx.eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, JsonObject.mapFrom(planet).encode(), newPlanetAr -> {
-
-                Object newPlanet = extractNewPlanet(planet, newPlanetAr);
-
-                vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_INSERT, JsonObject.mapFrom(newPlanet).encode(), dbResponseAr -> {
-                    if(dbResponseAr.failed()) {
-                        LOGGER.error("Insertion of planet {} failed due to database error!", newPlanet, dbResponseAr.cause());
-                        routingRequest.response().setStatusCode(500).end();
-                        return;
-                    }
-                    routingRequest.response().setStatusCode(201).end();
+                    JsonObject queryMap = new JsonObject()
+                            .put("id", routingRequest.queryParams().get("id"))
+                            .put("name", routingRequest.queryParams().get("name"));
+                    vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_SEARCH, queryMap.encode(), planetsAr -> {
+                        // TODO: Reply the list of products from the database
+                    });
                 });
+
+        router.route("/planet/:id")
+                .method(HttpMethod.DELETE)
+                .handler(routingRequest -> {
+                    JsonObject queryMap = new JsonObject()
+                            .put("id", routingRequest.pathParam("id"));
+                    vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_DELETE, queryMap.encode(), planetsAr -> {
+                        // TODO: Reply success no content 204
+                    });
+                });
+
+        return router;
+    }
+
+    private void productCreationHandler(RoutingContext routingRequest) {
+
+        JsonObject body = routingRequest.getBodyAsJson();
+        Planet planet = body.mapTo(Planet.class);
+        LOGGER.info("Received creation request for planet {}", planet);
+
+        vertx.eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, JsonObject.mapFrom(planet).encode(), newPlanetAr -> {
+
+            Object newPlanet = extractNewPlanet(planet, newPlanetAr);
+
+            vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_INSERT, JsonObject.mapFrom(newPlanet).encode(), dbResponseAr -> {
+                if(dbResponseAr.failed()) {
+                    LOGGER.error("Insertion of planet {} failed due to database error!", newPlanet, dbResponseAr.cause());
+                    routingRequest.response().setStatusCode(500).end();
+                    return;
+                }
+                routingRequest.response().setStatusCode(201).end(JsonObject.mapFrom(newPlanet).encodePrettily());
             });
         });
 
-        // TODO: id and name queryParameters. If none are provided, lists the planets.
-        // TODO: Separate this?
-        // TODO: Use pagination :o?
-        router.route("/planet").method(HttpMethod.GET);
-
-        return router;
     }
 
     private Object extractNewPlanet(Planet planet, AsyncResult<Message<Object>> newPlanetAr) {

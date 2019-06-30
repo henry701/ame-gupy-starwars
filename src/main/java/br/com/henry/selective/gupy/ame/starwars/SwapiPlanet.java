@@ -2,11 +2,20 @@ package br.com.henry.selective.gupy.ame.starwars;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "Planets")
 @Data
 @EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
 public class SwapiPlanet extends Planet {
 
-    private int films;
+    @Column(name = "films")
+    private Integer films;
 
 }

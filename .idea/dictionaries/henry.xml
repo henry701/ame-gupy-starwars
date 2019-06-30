@@ -4,6 +4,7 @@
       <w>appenders</w>
       <w>swapi</w>
       <w>verticle</w>
+      <w>verticles</w>
       <w>vertx</w>
     </words>
   </dictionary>
