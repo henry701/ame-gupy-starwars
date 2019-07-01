@@ -229,7 +229,7 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
                 message.fail(0, resultAr.cause().getMessage());
                 return;
             }
-            message.reply(resultAr.result().getUpdated());
+            message.reply(new JsonObject().put("deleted", resultAr.result().getUpdated()).encode());
         });
     }
 

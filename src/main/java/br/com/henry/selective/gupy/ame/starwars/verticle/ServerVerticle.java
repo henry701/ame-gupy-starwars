@@ -100,9 +100,14 @@ public class ServerVerticle extends AbstractVerticle {
     }
 
     private void planetQueryHandler(RoutingContext routingRequest) {
-        JsonObject queryMap = new JsonObject()
-                .put("id", routingRequest.queryParams().get("id"))
-                .put("name", routingRequest.queryParams().get("name"));
+        JsonObject queryMap = new JsonObject();
+        if (routingRequest.queryParams().contains("id")) {
+            queryMap.put("id", Long.parseLong(routingRequest.queryParams().get("id")));
+        }
+        if (routingRequest.queryParams().contains("name")) {
+            queryMap.put("name", routingRequest.queryParams().get("name"));
+        }
+
         if(queryMap.isEmpty()) {
             finishWithError(routingRequest, 400, "Either 'id' or 'name' query parameters should be present on the request!");
             return;
@@ -124,11 +129,16 @@ public class ServerVerticle extends AbstractVerticle {
 
     private void planetDeletionHandler(RoutingContext routingRequest) {
         String planetId = routingRequest.pathParam("id");
-        JsonObject queryMap = new JsonObject().put("id", planetId);
+        JsonObject queryMap = new JsonObject().put("id", Long.parseLong(planetId));
         vertx.eventBus().send(EventBusAddresses.DATABASE_HANDLER_DELETE, queryMap.encode(), deletionAr -> {
             if(deletionAr.failed()) {
                 LOGGER.error("Deletion of planet with ID {} failed due to database error!", planetId, deletionAr.cause());
                 finishWithError(routingRequest, 500, deletionAr.cause().getMessage());
+                return;
+            }
+            Integer deletedQuantity = new JsonObject(deletionAr.result().body().toString()).getInteger("deleted");
+            if (deletedQuantity == 0) {
+                finishWithError(routingRequest, 400, "Planet with ID " + planetId + " does not exist!");
                 return;
             }
             routingRequest.response().setStatusCode(204).end();
@@ -164,7 +174,12 @@ public class ServerVerticle extends AbstractVerticle {
     }
 
     private void finishWithError(RoutingContext routingRequest, int statusCode, String message) {
-        routingRequest.response().setStatusCode(statusCode).end(getMessageError(message).encodePrettily());
+        routingRequest.response()
+            .headers()
+            .set("Content-Type", "application/json");
+        routingRequest.response()
+            .setStatusCode(statusCode)
+            .end(getMessageError(message).encodePrettily());
     }
 
     private void afterInsert(RoutingContext routingRequest, Object newPlanet, AsyncResult<Message<Object>> dbResponseAr) {
