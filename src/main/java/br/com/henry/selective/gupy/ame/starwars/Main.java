@@ -4,10 +4,7 @@ import br.com.henry.selective.gupy.ame.starwars.util.ConfigUtils;
 import br.com.henry.selective.gupy.ame.starwars.verticle.PlanetDatabaseVerticle;
 import br.com.henry.selective.gupy.ame.starwars.verticle.ServerVerticle;
 import br.com.henry.selective.gupy.ame.starwars.verticle.SwapiVerticle;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,28 +23,36 @@ public class Main {
         try {
             Map<String, Object> merge = ConfigUtils.loadEnv(this);
             Vertx vertx = Vertx.vertx();
-            ConfigUtils.getConfig(vertx, JsonObject.mapFrom(merge)).setHandler(startWithConfig(vertx));
+            ConfigUtils.getConfig(vertx, JsonObject.mapFrom(merge))
+                .setHandler(configAr -> {
+                    startWithConfig(vertx, configAr)
+                        .setHandler(startedAr -> {
+                            if (startedAr.failed()) {
+                                LOGGER.error("Error occurred while starting the verticles!", startedAr.cause());
+                                System.exit(-1);
+                            }
+                        });
+                });
         } catch(Exception e) {
-            LOGGER.error("Fatal error while starting server!", e);
+            LOGGER.error("Fatal error occurred while starting application!", e);
             throw e;
         }
     }
 
-    private Handler<AsyncResult<JsonObject>> startWithConfig(Vertx vertx) {
-        return configAr -> startWithConfig(vertx, configAr);
-    }
-
-    private void startWithConfig(Vertx vertx, AsyncResult<JsonObject> configAr) {
+    private Future<Void> startWithConfig(Vertx vertx, AsyncResult<JsonObject> configAr) {
         DeploymentOptions deploymentOptions = ConfigUtils.buildConfig(configAr);
-        startVerticles(vertx, deploymentOptions);
+        return startVerticles(vertx, deploymentOptions);
     }
 
-    private void startVerticles(Vertx vertx, DeploymentOptions deploymentOptions) {
-        // TODO: CompletionHandler the three, and if any fails, throw exception to drop the application
+    private Future<Void> startVerticles(Vertx vertx, DeploymentOptions deploymentOptions) {
+        Future<Void> swapi = Future.future();
         vertx.deployVerticle(new SwapiVerticle(), deploymentOptions);
+        Future<Void> server = Future.future();
         vertx.deployVerticle(new ServerVerticle(), deploymentOptions);
+        Future<Void> database = Future.future();
         vertx.deployVerticle(new PlanetDatabaseVerticle(), deploymentOptions);
-        LOGGER.info("All verticles have been deployed!");
+        CompositeFuture future = CompositeFuture.all(swapi, server, database);
+        return future.mapEmpty();
     }
 
 }

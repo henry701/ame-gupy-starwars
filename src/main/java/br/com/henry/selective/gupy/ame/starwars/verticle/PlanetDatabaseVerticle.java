@@ -158,10 +158,12 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
 
     private void createSqlClient() {
         JsonObject clientConfig = buildDatabaseConfig();
-        if ("mysql".equals(config().getString("database.vendor", "mysql"))) {
+        String vendor = config().getString("database.vendor", "mysql");
+        if ("mysql".equals(vendor)) {
             this.sqlClient = MySQLClient.createShared(vertx, clientConfig);
         } else {
             // Generic JDBCClient
+            LOGGER.warn("Using JDBCClient because there is no specific driver coded for vendor {}. This may lead to blocking issues!", vendor);
             this.sqlClient = JDBCClient.createShared(vertx, clientConfig);
         }
     }
@@ -229,6 +231,30 @@ public class PlanetDatabaseVerticle extends AbstractVerticle {
             }
             message.reply(resultAr.result().getUpdated());
         });
+    }
+
+    public EntityManagerFactory getEntityManagerFactory() {
+        return entityManagerFactory;
+    }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    public Session getSession() {
+        return session;
+    }
+
+    public SQLClient getSqlClient() {
+        return sqlClient;
+    }
+
+    public JooqQueryHelpers getJooqQueryHelpers() {
+        return jooqQueryHelpers;
     }
 
 }

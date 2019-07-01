@@ -4,51 +4,21 @@ import br.com.henry.selective.gupy.ame.starwars.constant.EventBusAddresses;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import lombok.SneakyThrows;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class SwapiVerticleTest {
+public class SwapiVerticleTest extends AbstractVerticleTest<SwapiVerticle> {
 
-    @Rule
-    public RunTestOnContext rule = new RunTestOnContext();
-
-    private SwapiVerticle verticle;
-
-    @Before
-    @SneakyThrows
-    public void before() {
-        this.verticle = new SwapiVerticle();
-    }
-
-    @After
-    @SneakyThrows
-    public void after() {
-        verticle.stop();
-    }
-
-    @Test
-    public void testDeployment(TestContext testContext) {
-        Async testAsync = testContext.async();
-        testContext.verify(__ -> rule.vertx().deployVerticle(verticle, verticleAr -> {
-            if (verticleAr.failed()) {
-                testContext.fail(verticleAr.cause());
-            } else {
-                testAsync.complete();
-            }
-        }));
+    public SwapiVerticleTest() {
+        super(SwapiVerticle.class);
     }
 
     @Test
     public void testGetWithYavinName(TestContext testContext) {
         Async testAsync = testContext.async();
-        rule.vertx().deployVerticle(verticle, verticleAr -> rule.vertx().eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, new JsonObject().put("name", "Yavin IV").encode(), reply -> {
+        deployThen(testContext).setHandler(verticleAr -> rule.vertx().eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, new JsonObject().put("name", "Yavin IV").encode(), reply -> {
             if (reply.failed()) {
                 testContext.fail(reply.cause());
                 return;
@@ -63,7 +33,7 @@ public class SwapiVerticleTest {
     @Test
     public void testGetWithInvalidName(TestContext testContext) {
         Async testAsync = testContext.async();
-        rule.vertx().deployVerticle(verticle, verticleAr -> rule.vertx().eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, new JsonObject().put("name", "This planet does NOT exist").encode(), reply -> {
+        deployThen(testContext).setHandler(verticleAr -> rule.vertx().eventBus().send(EventBusAddresses.SWAPI_AGGREGATOR, new JsonObject().put("name", "This planet does NOT exist").encode(), reply -> {
             if (reply.failed()) {
                 testAsync.complete();
                 return;
