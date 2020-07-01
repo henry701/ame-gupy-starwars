@@ -18,7 +18,7 @@
         <lombok.version>1.18.8</lombok.version>
         <jooq.version>3.11.11</jooq.version>
         <hibernate.version>5.4.3.Final</hibernate.version>
-        <mysql-connector.version>5.1.47</mysql-connector.version>
+        <mysql-connector.version>8.0.16</mysql-connector.version>
         <h2.version>1.4.199</h2.version>
         <rest-assured.version>4.0.0</rest-assured.version>
     </properties>
